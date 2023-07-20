@@ -85,18 +85,17 @@ impl Server {
             module: None,
         }
     }
-    fn add_system(&mut self, func: impl FnMut(App) + 'static) -> &mut Self {
+    fn add_system(mut self, func: impl FnMut(App) + 'static) -> Self {
         self.func.push(Box::new(func));
         self
     }
-    fn add_module(&mut self, module: App) -> &mut Self {
+    fn add_module(mut self, module: App) -> Self {
         self.module = Some(module);
         self
     }
-    fn run(&mut self) -> io::Result<()> {
-        let module = self.module.as_mut().unwrap();
+    fn run(mut self) -> io::Result<()> {
         for system in self.func.iter_mut() {
-            system(module.clone());
+            system(self.module.as_mut().unwrap().clone());
         }
         Ok(())
     }
@@ -110,13 +109,13 @@ fn main() {
             .build(),
     );
 
-    Server::new()
+    let server = Server::new()
         .add_module(module.clone())
         .add_system(func_a)
         .add_system(func_b)
-        .add_system(func_c)
-        .run()
-        .unwrap();
+        .add_system(func_c);
+
+    server.run().unwrap();
 }
 
 fn func_a(module: App) {
