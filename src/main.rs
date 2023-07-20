@@ -41,9 +41,32 @@ impl IApp for AppImpl {
     }
 }
 
+// NOTE: Just imagine this is some kind of sql client
+trait IClient: Interface {
+    fn raw(&self) -> usize;
+}
+
+#[derive(Component)]
+#[shaku(interface = IClient)]
+struct ClientImpl {
+    size: usize,
+}
+
+impl IClient for ClientImpl {
+    fn raw(&self) -> usize {
+        self.size
+    }
+}
+
+impl Default for ClientImpl {
+    fn default() -> Self {
+        ClientImpl { size: 10 }
+    }
+}
+
 module! {
     AppModule {
-        components = [AppImpl],
+        components = [AppImpl, ClientImpl],
         providers  = []
     }
 }
@@ -83,6 +106,7 @@ fn main() {
     let module = Arc::new(
         AppModule::builder()
             .with_component_override::<dyn IApp>(Box::new(AppImpl::default()))
+            .with_component_override::<dyn IClient>(Box::new(ClientImpl::default()))
             .build(),
     );
 
@@ -108,12 +132,11 @@ fn func_b(module: App) {
 
     let title = app.get_title();
     println!("{title}");
-    app.set_title("hello john");
 }
 
 fn func_c(module: App) {
-    let app: &dyn IApp = module.resolve_ref();
+    let client: &dyn IClient = module.resolve_ref();
 
-    let title = app.get_title();
-    println!("{title}");
+    let size = client.raw();
+    println!("{size}");
 }
